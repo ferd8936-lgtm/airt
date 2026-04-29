@@ -35,23 +35,25 @@
 
         .section { display: flex; align-items: center; gap: 5px; }
 
-        /* 모든 요소 세로 높이 26px로 통일 및 중앙 정렬 */
+        /* 모든 요소 세로 높이 21px(20% 축소)로 통일 및 완벽한 수직 중앙 정렬 */
         span, input, button {
-            height: 26px;
+            height: 21px;
             box-sizing: border-box;
             display: inline-flex;
-            align-items: center;
+            align-items: center; /* 플렉스 기준 세로 중앙 정렬 */
+            vertical-align: middle; /* 텍스트 기준선 강제 중앙 정렬 */
+            margin: 0;
         }
 
-        /* 텍스트 요소들 미세 조정 */
-        span { font-size: 14px; }
+        /* 텍스트 요소들 미세 조정 (글자 크기 유지) */
+        span { font-size: 14px; line-height: 1; }
         #control-bar .section:first-child span:first-child { font-size: 16px; } 
         
         input { 
             padding: 0 8px; 
             border-radius: 4px; 
             border: none; 
-            width: 70px; 
+            width: 91px; /* 가로 30% 확대 (기존 70px -> 91px) */
             font-family: 'NexonLv2Gothic';
             font-size: 13px;
         }
@@ -77,11 +79,11 @@
         /* 3. 전체 화면 지도 */
         #map { width: 100%; height: 100vh; z-index: 1; }
 
-        /* 4. 모바일 최적화 (여백과 글자 크기만 살짝 조절, 1줄은 그대로 유지) */
+        /* 4. 모바일 최적화 (1줄 유지 및 비율에 맞게 크기 축소/확대 적용) */
         @media (max-width: 600px) {
             #control-bar { padding: 8px; gap: 5px; }
-            input { width: 60px; padding: 0 4px; }
-            span, input, button { height: 26px; font-size: 12px; }
+            input { width: 78px; padding: 0 4px; } /* 모바일도 30% 확대 (60px -> 78px) */
+            span, input, button { height: 21px; font-size: 12px; } /* 높이 21px 통일 */
             #control-bar .section:first-child span:first-child { font-size: 14px; }
         }
     </style>
@@ -90,7 +92,13 @@
 
     <div id="control-bar">
         <div class="section">
-            <span style="font-weight: 900; color: #ffeb3b; margin-right: 8px;">📍 AI LTS</span>
+            <span style="font-weight: 900; color: #ffeb3b; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2 C7.58 2 4 5.58 4 10 C4 15.25 12 22 12 22 C12 22 20 15.25 20 10 C20 5.58 16.42 2 12 2 Z" fill="#1E88FF"/>
+                    <circle cx="12" cy="10" r="3.5" fill="#FFFFFF"/>
+                </svg>
+                AI LTS
+            </span>
             <span>아이디:</span>
             <input type="text" id="child-id" placeholder="KID01">
             <button id="btn-toggle" class="btn-connect" onclick="toggleConnection()">연결</button>
