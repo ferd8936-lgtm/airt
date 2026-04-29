@@ -43,7 +43,7 @@
         }
 
         input, button {
-            height: 30px; /* 기존 21px에서 30px로 크기 확대 및 통일 */
+            height: 21px; /* 30px에서 30% 축소 (글자 크기는 유지됨) */
             box-sizing: border-box;
             display: inline-flex;
             align-items: center;
@@ -85,12 +85,12 @@
         /* 3. 전체 화면 지도 */
         #map { width: 100%; height: 100vh; z-index: 1; }
 
-        /* 4. 모바일 최적화 (1줄 유지 및 비율에 맞게 크기 축소/확대 적용) */
+        /* 4. 모바일 최적화 */
         @media (max-width: 600px) {
             #control-bar { padding: 8px; gap: 5px; }
             input { width: 78px; padding: 0 4px; } 
             span { font-size: 12px; height: 26px; } 
-            input, button { height: 26px; font-size: 12px; } /* 모바일에서도 높이 통일 */
+            input, button { height: 21px; font-size: 12px; } /* 모바일도 높이 21px로 축소 */
             #control-bar .section:first-child span:first-child { font-size: 14px; }
         }
     </style>
@@ -100,7 +100,7 @@
     <div id="control-bar">
         <div class="section">
             <span style="font-weight: 900; color: #ffeb3b; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2 C7.58 2 4 5.58 4 10 C4 15.25 12 22 12 22 C12 22 20 15.25 20 10 C20 5.58 16.42 2 12 2 Z" fill="#1E88FF"/>
                     <circle cx="12" cy="10" r="3.5" fill="#FFFFFF"/>
                 </svg>
@@ -263,7 +263,7 @@
                                 ">
                                     배터리: ${batteryLevel}%
                                 </div>`,
-                            yAnchor: 2.5 
+                            yAnchor: 3.2 
                         });
                     }
                 }
