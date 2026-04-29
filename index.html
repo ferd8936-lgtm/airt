@@ -56,21 +56,38 @@
         /* 모바일 최적화 레이아웃 조절 */
         @media (max-width: 600px) {
             #control-bar { 
-                padding: 8px; 
-                gap: 5px; 
-                justify-content: center; 
+                padding: 10px; 
+                gap: 10px; 
+                justify-content: flex-start; /* 전체 왼쪽 정렬 */
             }
-            /* 첫 번째 섹션(아이콘/ID)을 한 줄 전체로 설정 */
+
+            /* 첫 번째 섹션(아이콘/ID) 설정 */
             #control-bar .section:first-child {
-                width: 100%;
-                justify-content: center;
-                margin-bottom: 5px;
-                border-bottom: 1px solid rgba(255,255,255,0.2);
-                padding-bottom: 5px;
+                width: 100%;      /* 첫 줄 영역 확보 */
+                flex-wrap: wrap;  /* 내부 요소 줄 바꿈 허용 */
+                justify-content: flex-start;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                padding-bottom: 8px;
+                margin-bottom: 2px;
             }
-            input { width: 70px; }
+
+            /* AI LTS 타이틀만 첫 번째 줄에 고정 */
+            #control-bar .section:first-child span:first-child {
+                width: 100%;      /* 혼자서 한 줄 다 차지 */
+                display: block;
+                font-size: 18px;
+                margin-bottom: 5px;
+            }
+
+            /* 두 번째 줄부터 시작할 요소들 정렬 */
+            .section {
+                width: auto;
+                justify-content: flex-start;
+            }
+
+            input { width: 90px; } /* 입력창 크기 소폭 조절 */
             #status-display { font-size: 13px; }
-            button { padding: 5px 8px; font-size: 12px; }
+            button { padding: 5px 10px; font-size: 12px; }
         }
     </style>
 </head>
