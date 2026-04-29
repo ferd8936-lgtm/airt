@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>아이 위치 관제 시스템</title>
+
+    <!-- 카카오맵 및 파이어베이스 라이브러리 -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=여기에_발급받은_JavaScript키_입력"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* 2. 폰트 설정 */
+        @font-face {
+            font-family: 'NexonLv2Gothic';
+            src: url('NexonLv2Gothic_2.ttf') format('truetype');
+        }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            font-family: 'NexonLv2Gothic', sans-serif; overflow: hidden;
+        }
+
+        /* 3. 상단 제어 바 (반응형 구성) */
+        #control-bar {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(0, 0, 0, 0.75); color: white;
+            display: flex; align-items: center; justify-content: flex-start;
+            padding: 10px; gap: 10px; flex-wrap: wrap;
+        }
+
+        .section { display: flex; align-items: center; gap: 5px; }
+        
+        input { 
+            padding: 5px; border-radius: 4px; border: none; width: 80px; 
+            font-family: 'NexonLv2Gothic'; 
+        }
+
+        button { 
+            padding: 6px 12px; border: none; border-radius: 4px; 
+            cursor: pointer; font-weight: bold; font-family: 'NexonLv2Gothic';
+            font-size: 13px;
+        }
+
+        .btn-connect { background: #007bff; color: white; }
+        .btn-on { background: #dc3545; color: white; }
+        .btn-off { background: #6c757d; color: white; }
+
+        #status-display { font-size: 14px; font-weight: bold; }
+        #timer-display { color: #ffeb3b; font-size: 16px; font-weight: bold; }
+
+        /* 3. 전체 화면 지도 */
+        #map { width: 100%; height: 100vh; z-index: 1; }
+
+        /* 모바일 최적화 레이아웃 조절 */
+        @media (max-width: 600px) {
+            #control-bar { padding: 8px; gap: 8px; justify-content: center; }
+            input { width: 60px; }
+            #status-display { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="control-bar">
+        <div class="section">
+            <span style="font-weight: 900; color: #ffeb3b; margin-right: 8px;">🧭 AI LTS</span>
+            <span>아이디:</span>
+            <input type="text" id="child-id" placeholder="KID01">
+            <button class="btn-connect" onclick="connectToChild()">연결</button>
+        </div>
+        
+        <div class="section">
+            <button class="btn-on" onclick="setTracking('on')">ON</button>
+            <button class="btn-off" onclick="setTracking('off')">OFF</button>
+        </div>
+
+        <div class="section">
+            <span id="status-display">대기 중</span>
+            <span id="timer-display"></span>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        // 파이어베이스 설정 (기존 정보 유지)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2Gkfi4bqVtBXO-a2dN3Bq8UN9DCczrb8",
+            authDomain: "childtracker-ceec9.firebaseapp.com",
+            projectId: "childtracker-ceec9",
+            storageBucket: "childtracker-ceec9.firebasestorage.app",
+            messagingSenderId: "45166870569",
+            appId: "1:45166870569:web:f6879138c465c13eeb5c38"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 카카오맵 초기화
+        const mapContainer = document.getElementById('map');
+        const mapOption = {
+            center: new kakao.maps.LatLng(35.8714, 128.6014), // 대구광역시 중심
+            level: 5 // 확대 레벨
+        };
+        const map = new kakao.maps.Map(mapContainer, mapOption);
+        
+        // 줌 컨트롤러 추가
+        const zoomControl = new kakao.maps.ZoomControl();
+        map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+        let marker = null;
+        let infowindow = null; // 배터리 표시 팝업창
+        let currentChildId = "";
+        let timerInterval = null;
+        let timeLeft = 600;
+
+        function connectToChild() {
+            const inputId = document.getElementById('child-id').value.trim();
+            if (!inputId) return alert("아이디를 입력하세요.");
+            currentChildId = inputId;
+            document.getElementById('status-display').innerText = `연결됨: ${currentChildId}`;
+            listenToLocation();
+            listenToStatus();
+        }
+
+        function setTracking(status) {
+            if (!currentChildId) return alert("아이디 연결을 먼저 해주세요.");
+            database.ref('children/' + currentChildId + '/status').set(status);
+        }
+
+        function listenToStatus() {
+            database.ref('children/' + currentChildId + '/status').on('value', (snapshot) => {
+                const status = snapshot.val();
+                if (status === 'on') {
+                    document.getElementById('status-display').innerText = "위치 추적 중";
+                    document.getElementById('status-display').style.color = "#ff4d4d";
+                    startTimer();
+                } else {
+                    document.getElementById('status-display').innerText = "추적 중지";
+                    document.getElementById('status-display').style.color = "white";
+                    stopTimer();
+                }
+            });
+        }
+
+        function listenToLocation() {
+            database.ref('children/' + currentChildId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.lat && data.lng) {
+                    const lat = data.lat;
+                    const lng = data.lng;
+
+                    // 카카오맵 위치 수신 및 줌인 기능 반영
+                    const moveLatLon = new kakao.maps.LatLng(lat, lng);
+                    
+                    map.setLevel(2); // 줌인 레벨 (숫자가 작을수록 확대됨)
+                    map.panTo(moveLatLon); // 부드럽게 이동
+
+                    if (marker) {
+                        marker.setPosition(moveLatLon);
+                    } else {
+                        marker = new kakao.maps.Marker({ position: moveLatLon });
+                        marker.setMap(map);
+                    }
+
+                    // 배터리 팝업창 표시 (폰트 적용)
+                    if (infowindow) infowindow.close();
+                    infowindow = new kakao.maps.InfoWindow({
+                        content: `<div style="padding:5px; font-size:14px; color:black; font-family:'NexonLv2Gothic';">배터리: ${data.battery}%</div>`
+                    });
+                    infowindow.open(map, marker);
+                }
+            });
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 600;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    setTracking('off');
+                    alert("10분이 경과하여 추적을 자동으로 종료합니다.");
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timer-display').innerText = "";
+        }
+
+        function updateTimerDisplay() {
+            const min = Math.floor(timeLeft / 60);
+            const sec = timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+        }
+    </script>
+</body>
+</html>
