@@ -57,50 +57,37 @@
         @media (max-width: 600px) {
             #control-bar { 
                 padding: 10px; 
-                gap: 8px; /* 요소 간 간격 축소 */
-                justify-content: flex-start; /* 전체 왼쪽 정렬 */
+                gap: 5px; 
+                justify-content: flex-start; /* 모바일 전체 왼쪽 정렬 */
                 flex-wrap: wrap; 
             }
 
-            /* 1. 타이틀을 무조건 첫 줄로 보냄 */
+            /* 첫 번째 섹션을 줄바꿈 가능하게 설정 */
+            #control-bar .section:first-child {
+                width: 100%; 
+                height: auto;
+                flex-wrap: wrap;
+                margin-bottom: 5px;
+            }
+
+            /* 타이틀만 100% 폭을 주어 첫 줄을 독점하게 함 */
             #control-bar .section:first-child span:first-child {
                 width: 100%; 
-                display: block;
                 font-size: 18px;
-                color: #ffeb3b;
                 margin-bottom: 8px;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-                padding-bottom: 5px;
+                display: block;
             }
 
-            /* 2. 아이디 입력칸부터는 같은 줄에 계속 배치 */
+            /* 아이디 입력칸부터는 자연스럽게 두 번째 줄 왼쪽부터 정렬 */
             .section {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                width: auto; /* 필요한 만큼만 너비 차지 */
+                width: auto;
+                height: 30px;
             }
 
-            /* 3. 좁은 화면을 위해 크기 세밀 조절 */
-            input { 
-                width: 65px; 
-                padding: 4px; 
-                font-size: 12px; 
-            }
-
-            button { 
-                padding: 5px 8px; 
-                font-size: 11px; 
-            }
-
-            #status-display { 
-                font-size: 12px; 
-                white-space: nowrap; /* 글자 줄바꿈 방지 */
-            }
-
-            #timer-display { 
-                font-size: 14px; 
-            }
+            input { width: 65px; height: 20px; font-size: 12px; }
+            button { padding: 4px 8px; font-size: 11px; }
+            #status-display { font-size: 12px; white-space: nowrap; }
+            #timer-display { font-size: 14px; }
         }
     </style>
 </head>
