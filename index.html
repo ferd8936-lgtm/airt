@@ -146,18 +146,24 @@
         }
 
         function listenToLocation() {
+            // 아이 폰의 위치 데이터를 실시간으로 감시합니다.
             database.ref('children/' + currentChildId).on('value', (snapshot) => {
                 const data = snapshot.val();
+                
+                // 데이터가 존재하고 위도(lat), 경도(lng) 값이 있는지 확인
                 if (data && data.lat && data.lng) {
-                    const lat = data.lat;
-                    const lng = data.lng;
+                    // 문자로 들어올 경우를 대비해 숫자로 강제 변환합니다.
+                    const lat = Number(data.lat);
+                    const lng = Number(data.lng);
 
-                    // 카카오맵 위치 수신 및 줌인 기능 반영
+                    // 카카오맵 좌표 객체 생성
                     const moveLatLon = new kakao.maps.LatLng(lat, lng);
                     
-                    map.setLevel(2); // 줌인 레벨 (숫자가 작을수록 확대됨)
-                    map.panTo(moveLatLon); // 부드럽게 이동
+                    // 지도 확대 레벨 설정 및 부드러운 이동
+                    map.setLevel(2); 
+                    map.panTo(moveLatLon); 
 
+                    // 마커(핀)가 이미 있으면 위치만 옮기고, 없으면 새로 만듭니다.
                     if (marker) {
                         marker.setPosition(moveLatLon);
                     } else {
@@ -165,10 +171,11 @@
                         marker.setMap(map);
                     }
 
-                    // 배터리 팝업창 표시 (폰트 적용)
+                    // 배터리 정보를 팝업창으로 표시 (폰트 유지)
                     if (infowindow) infowindow.close();
+                    const batteryLevel = data.battery !== undefined ? data.battery : '--';
                     infowindow = new kakao.maps.InfoWindow({
-                        content: `<div style="padding:5px; font-size:14px; color:black; font-family:'NexonLv2Gothic';">배터리: ${data.battery}%</div>`
+                        content: `<div style="padding:5px; font-size:14px; color:black; font-family:'NexonLv2Gothic'; text-align:center;">배터리: ${batteryLevel}%</div>`
                     });
                     infowindow.open(map, marker);
                 }
