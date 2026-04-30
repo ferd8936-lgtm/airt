@@ -250,7 +250,6 @@ span {
                     // 1. 연결 해제(앱 종료 및 통신 끊김) 감지 타이머 (30초)
                     clearTimeout(disconnectTimer);
                     disconnectTimer = setTimeout(() => {
-                        // [수정] 안내 문구 통일
                         alert("현재 앱과 연결이 해제되었습니다.");
                         setTracking('off');
                     }, 30000);
@@ -261,8 +260,8 @@ span {
                     if (lat && lng) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
-                        // [수정] 헷갈리는 미이동 팝업 로직 삭제, 즉시 지도 및 마커 갱신
-                        map.setLevel(2); 
+                        // [수정 완료] map.setLevel(2)를 삭제했습니다. 
+                        // 이제 최초 연결 시에만 줌인이 되고, 이동 시에는 현재 줌 배율을 유지하며 중심만 이동합니다.
                         map.panTo(moveLatLon); 
 
                         if (marker) {
