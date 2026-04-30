@@ -158,11 +158,7 @@ span {
         let currentChildId = "";
         let timerInterval = null;
         let timeLeft = 600;
-        let disconnectTimer = null; // [추가] 데이터 수신 중단 감지 타이머
-        let lastLat = null;       // 마지막 위도 저장
-        let lastLng = null;       // 마지막 경도 저장
-        let stagnationTimer = null; // 미이동 감지 타이머
-        let hasShownStagnationAlert = false; // 팝업 중복 방지 플래그
+        let disconnectTimer = null; // 데이터 수신 중단(앱 종료) 감지 타이머
 
         let isListenersAttached = false; // 중복 실행 방지용
 
@@ -175,31 +171,41 @@ span {
             currentChildId = inputId;
             
             if (btn.innerText === "연결") {
-                // [수정] 파이어베이스에서 해당 아이디의 데이터를 먼저 조회합니다.
+                // 파이어베이스에서 해당 아이디의 마지막 데이터를 불러옵니다.
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
                     const data = snapshot.val();
                     
-                    // 앱이 한 번도 실행되지 않았거나 데이터가 아예 없는 경우
                     if (!data) {
-                        alert("연결 실패: 앱이 실행되고 있지 않거나 아이디가 올바르지 않습니다.");
-                        return; // 여기서 함수를 종료하여 타이머 및 리스너가 작동하지 않음
+                        alert("연결 실패: 해당 아이디의 데이터가 존재하지 않습니다.");
+                        return;
                     }
 
-                    // 앱이 과거에 실행된 적은 있지만, 현재 살아있는지 추가 확인 (선택 사항)
-                    // 현재 앱 구조상 데이터가 존재하면 일단 실행 중으로 간주하고 연결을 시도합니다.
+                    // [추가] 과거 마지막 위치를 지도에 먼저 표시해 줍니다.
+                    const lat = data.lat || data.latitude;
+                    const lng = data.lng || data.longitude;
+                    if (lat && lng) {
+                        const lastLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
+                        map.setLevel(2);
+                        map.panTo(lastLatLon);
+                        
+                        if (marker) {
+                            marker.setPosition(lastLatLon);
+                        } else {
+                            marker = new kakao.maps.Marker({ position: lastLatLon });
+                            marker.setMap(map);
+                        }
+                    }
 
-                    // 검증 통과 시에만 리스너를 달고 추적 상태를 'on'으로 변경
+                    // 이후 실시간 추적 리스너를 달고 상태를 'on'으로 변경
                     if (!isListenersAttached) {
                         listenToLocation();
                         listenToStatus();
                         isListenersAttached = true;
                     }
                     
-                    // 상태를 on으로 바꿔야 listenToStatus에서 타이머가 시작됩니다.
                     setTracking('on');
                 });
             } else {
-                // 해제 버튼을 누른 경우는 즉시 중지 처리
                 setTracking('off');
             }
         }
@@ -241,10 +247,11 @@ span {
                 const data = snapshot.val();
                 
                 if (data) {
-                    // 1. 연결 해제(앱 종료) 감지 타이머 (30초)
+                    // 1. 연결 해제(앱 종료 및 통신 끊김) 감지 타이머 (30초)
                     clearTimeout(disconnectTimer);
                     disconnectTimer = setTimeout(() => {
-                        alert("앱과의 연결이 해제되었습니다.");
+                        // [수정] 안내 문구 통일
+                        alert("현재 앱과 연결이 해제되었습니다.");
                         setTracking('off');
                     }, 30000);
 
@@ -254,33 +261,15 @@ span {
                     if (lat && lng) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
-                        // 2. 위치 미이동 감지 로직
-                        if (lat === lastLat && lng === lastLng) {
-                            // 좌표가 이전과 똑같을 때
-                            if (!stagnationTimer && !hasShownStagnationAlert) {
-                                stagnationTimer = setTimeout(() => {
-                                    alert("얼마 동안 위치 이동이 없습니다.");
-                                    hasShownStagnationAlert = true; // 이동 전까지 한 번만 띄움
-                                }, 30000); // 30초 동안 이동 없을 시 팝업
-                            }
-                        } else {
-                            // 좌표가 변했을 때 (이동 중)
-                            clearTimeout(stagnationTimer);
-                            stagnationTimer = null;
-                            hasShownStagnationAlert = false; // 플래그 초기화
-                            
-                            // 이동이 확인되면 지도 및 마커 갱신
-                            map.setLevel(2); 
-                            map.panTo(moveLatLon); 
+                        // [수정] 헷갈리는 미이동 팝업 로직 삭제, 즉시 지도 및 마커 갱신
+                        map.setLevel(2); 
+                        map.panTo(moveLatLon); 
 
-                            if (marker) {
-                                marker.setPosition(moveLatLon);
-                            } else {
-                                marker = new kakao.maps.Marker({ position: moveLatLon });
-                                marker.setMap(map);
-                            }
-                            lastLat = lat; // 현재 좌표 저장
-                            lastLng = lng;
+                        if (marker) {
+                            marker.setPosition(moveLatLon);
+                        } else {
+                            marker = new kakao.maps.Marker({ position: moveLatLon });
+                            marker.setMap(map);
                         }
 
                         // 배터리 정보 표시 (기존 유지)
