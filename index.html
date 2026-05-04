@@ -153,6 +153,10 @@ span {
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
+        // [수정 6 반영] 위성지도 및 로드뷰 컨트롤러 추가
+        const mapTypeControl = new kakao.maps.MapTypeControl();
+        map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
         let marker = null;
         let infowindow = null; // 배터리 표시 팝업창 (CustomOverlay 객체 담김)
         let currentChildId = "";
@@ -161,6 +165,14 @@ span {
         let disconnectTimer = null; // 데이터 수신 중단(앱 종료) 감지 타이머
 
         let isListenersAttached = false; // 중복 실행 방지용
+
+        // [수정 5 반영] 페이지 로드 시 로컬 스토리지에 저장된 이전 아이디 불러오기
+        window.onload = function() {
+            const savedChildId = localStorage.getItem('lastChildId');
+            if (savedChildId) {
+                document.getElementById('child-id').value = savedChildId;
+            }
+        };
 
         // 1. 연결 버튼 클릭 시 앱 상태 확인 및 토글 함수
         function toggleConnection() {
@@ -171,6 +183,9 @@ span {
             currentChildId = inputId;
             
             if (btn.innerText === "연결") {
+                // [수정 5 반영] 연결 시도 시 현재 입력된 아이디를 저장
+                localStorage.setItem('lastChildId', currentChildId);
+
                 // 파이어베이스에서 해당 아이디의 마지막 데이터를 불러옵니다.
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
                     const data = snapshot.val();
@@ -180,7 +195,7 @@ span {
                         return;
                     }
 
-                    // [추가] 과거 마지막 위치를 지도에 먼저 표시해 줍니다.
+                    // 과거 마지막 위치를 지도에 먼저 표시해 줍니다.
                     const lat = data.lat || data.latitude;
                     const lng = data.lng || data.longitude;
                     if (lat && lng) {
@@ -260,9 +275,6 @@ span {
                     if (lat && lng) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
-                        // [수정 완료] map.panTo(moveLatLon)를 삭제하여 자동 화면 중앙 이동을 껐습니다.
-                        // 이제 핀(마커)만 이동하고 화면은 사용자가 고정한 위치를 유지합니다.
-
                         if (marker) {
                             marker.setPosition(moveLatLon);
                         } else {
@@ -277,7 +289,7 @@ span {
                             map: map,
                             position: moveLatLon,
                             content: `<div style="font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                            yAnchor: 3.2 
+                            yAnchor: 4.5 // [수정 4 반영] 아이콘 상단 고정을 위해 3.2에서 4.5로 상향
                         });
                     }
                 }
