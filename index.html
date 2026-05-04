@@ -321,35 +321,34 @@ span {
                             });
                             marker.setMap(map);
                             
-                            // 2. 마커 클릭 시 로드뷰 실행 로직 보강
+                            // [수정 반영] rv.relayout(); 한 줄 추가
                             kakao.maps.event.addListener(marker, 'click', function() {
-                                const currentPos = marker.getPosition();
-                                
-                                // 반경을 100m로 넓혀서 근처 로드뷰를 더 잘 찾게 합니다.
-                                rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
-                                    if (panoId !== null) {
-                                        const rvCont = document.getElementById('roadview-container');
-                                        rvCont.style.display = 'block'; // 창을 먼저 띄우고
-                                        
-                                        // [핵심] 창이 나타난 후 로드뷰를 다시 그려주는 신호를 보냅니다.
-                                        rv.relayout(); 
-                                        rv.setPanoId(panoId, currentPos);
-                                    } else {
-                                        alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
-                                    }
-                                });
-                            });
+                                  const currentPos = marker.getPosition();
+    
+                                  rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
+                                       if (panoId !== null) {
+                                          // 로드뷰 창을 먼저 띄웁니다.
+                                          document.getElementById('roadview-container').style.display = 'block';
+            
+                                          // [중요] 창이 열린 직후 레이아웃을 다시 잡아줘야 사진이 정상적으로 뜹니다.
+                                          rv.relayout(); 
+                                          rv.setPanoId(panoId, currentPos);
+                                       } else {
+                                          alert("이 근처(반경 100m)에는 카카오 로드뷰 사진이 없습니다.");
+                                       }
+                                   });
+                               });
                         }
 
                         // 배터리 정보 표시
                         if (infowindow) infowindow.setMap(null); 
                         const batteryLevel = data.battery !== undefined ? data.battery : '--';
+                        // [수정 반영] content 스타일 안에 pointer-events: none; 추가
                         infowindow = new kakao.maps.CustomOverlay({
                              map: map,
                              position: moveLatLon,
-                             content: `<div style="font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                             // [수정] 대표님 요청 수치 3.2 반영
-                             yAnchor: 3.2 
+                             content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
+                             yAnchor: 3.8 
                         });
                     }
                 } // 누락되었던 괄호 복구
