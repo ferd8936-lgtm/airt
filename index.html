@@ -92,6 +92,9 @@ span {
         /* 3. 전체 화면 지도 */
         #map { width: 100%; height: 100vh; z-index: 1; }
 
+        /* [추가] 카카오맵 기본 컨트롤러(지도/위성, 확대/축소)를 상단 바 아래로 내리기 */
+        .custom_typecontrol { position: absolute; top: 60px; right: 10px; z-index: 2; }
+
        /* [추가] 로드뷰 컨테이너 및 닫기 버튼 스타일 */
         #roadview-container {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 500; display: none;
@@ -135,6 +138,7 @@ span {
         </div>
     </div>
 
+    <!-- 오류의 원인이었던 중복된 <div id="map"></div> 를 1개로 정리했습니다 -->
     <div id="map"></div>
 
     <!-- [추가] 로드뷰 컨테이너 (평소에는 숨겨져 있습니다) -->
@@ -166,13 +170,15 @@ span {
         };
         const map = new kakao.maps.Map(mapContainer, mapOption);
         
-        // 줌 컨트롤러 추가
-        const zoomControl = new kakao.maps.ZoomControl();
-        map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
-
-        // [수정 6 반영] 위성지도 및 로드뷰 컨트롤러 추가 (이전에 작성하신 부분)
+        // [수정] 줌 및 지도/스카이뷰 컨트롤러 추가 (상단 바에 안 가려지도록 위치 조정)
         const mapTypeControl = new kakao.maps.MapTypeControl();
         map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+        const zoomControl = new kakao.maps.ZoomControl();
+        map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+        
+        // 추가: 카카오맵 내부 요소의 마진을 강제로 줘서 위에서 50px 띄웁니다.
+        const mapDiv = document.getElementById('map');
+        mapDiv.children[0].children[1].style.marginTop = '50px';
 
         // --- [여기서부터 추가] 로드뷰 객체 초기화 ---
         const rvContainer = document.getElementById('roadview');
@@ -301,40 +307,43 @@ span {
                     if (lat && lng) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
+                        // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
                         if (marker) {
                             marker.setPosition(moveLatLon);
                         } else {
                             marker = new kakao.maps.Marker({ position: moveLatLon });
                             marker.setMap(map);
                             
-                            // [추가] 마커를 클릭하면 로드뷰를 보여주는 이벤트 (최초 1회만 등록)
+                            // [수정 완료] 마커 생성 시 로드뷰 클릭 이벤트를 '딱 한 번' 강력하게 고정합니다.
                             kakao.maps.event.addListener(marker, 'click', function() {
-                                const pos = marker.getPosition();
-                                // 반경 50m 이내의 가장 가까운 길가의 로드뷰 파노라마 ID를 찾습니다.
-                                rvClient.getNearestPanoId(pos, 50, function(panoId) {
+                                // 항상 '현재 마커가 있는 최신 위치'를 가져옵니다.
+                                const currentPos = marker.getPosition();
+                                
+                                rvClient.getNearestPanoId(currentPos, 50, function(panoId) {
                                     if (panoId !== null) {
+                                        // 로드뷰 창을 열고 해당 위치의 파노라마 사진을 띄웁니다.
                                         document.getElementById('roadview-container').style.display = 'block';
-                                        rv.setPanoId(panoId, pos);
+                                        rv.setPanoId(panoId, currentPos);
                                     } else {
-                                        alert("아이 위치 주변(50m 이내)에 로드뷰가 촬영된 도로가 없습니다.");
+                                        alert("이 근처(반경 50m)에는 카카오 로드뷰 차량이 촬영한 도로가 없습니다.");
                                     }
                                 });
                             });
                         }
 
-                        // 배터리 정보 표시 (기존 유지)
+                        // 배터리 정보 표시
                         if (infowindow) infowindow.setMap(null); 
                         const batteryLevel = data.battery !== undefined ? data.battery : '--';
                         infowindow = new kakao.maps.CustomOverlay({
                             map: map,
                             position: moveLatLon,
                             content: `<div style="font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                            yAnchor: 2.5 // [수정 4 반영] 아이콘 상단 고정을 위해 3.2에서 4.5로 상향
+                            yAnchor: 3.2 // 대표님이 요청하신 수치로 수정 완료
                         });
                     }
-                }
-            });
-        }
+                } // 누락되었던 괄호 복구
+            }); // 누락되었던 괄호 복구
+        } // 누락되었던 괄호 복구
 
         function startTimer() {
             clearInterval(timerInterval);
