@@ -218,10 +218,8 @@ span {
             currentChildId = inputId;
             
             if (btn.innerText === "연결") {
-                // [수정 5 반영] 연결 시도 시 현재 입력된 아이디를 저장
                 localStorage.setItem('lastChildId', currentChildId);
 
-                // 파이어베이스에서 해당 아이디의 마지막 데이터를 불러옵니다.
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
                     const data = snapshot.val();
                     
@@ -230,23 +228,50 @@ span {
                         return;
                     }
 
-                    // 과거 마지막 위치를 지도에 먼저 표시해 줍니다.
                     const lat = data.lat || data.latitude;
                     const lng = data.lng || data.longitude;
+                    const batteryLevel = data.battery !== undefined ? data.battery : '--';
+
                     if (lat && lng) {
                         const lastLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         map.setLevel(2);
                         map.panTo(lastLatLon);
                         
+                        // [마커 생성 및 로드뷰 리스너 보강]
                         if (marker) {
                             marker.setPosition(lastLatLon);
                         } else {
-                            marker = new kakao.maps.Marker({ position: lastLatLon });
+                            marker = new kakao.maps.Marker({ 
+                                position: lastLatLon,
+                                clickable: true 
+                            });
                             marker.setMap(map);
+
+                            // 처음 연결 시에도 마커를 누르면 로드뷰가 뜨도록 설정
+                            kakao.maps.event.addListener(marker, 'click', function() {
+                                const currentPos = marker.getPosition();
+                                rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
+                                    if (panoId !== null) {
+                                        document.getElementById('roadview-container').style.display = 'block';
+                                        rv.relayout(); 
+                                        rv.setPanoId(panoId, currentPos);
+                                    } else {
+                                        alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
+                                    }
+                                });
+                            });
                         }
+
+                        // [초기 배터리 정보 즉시 표시 보강]
+                        if (infowindow) infowindow.setMap(null); 
+                        infowindow = new kakao.maps.CustomOverlay({
+                            map: map,
+                            position: lastLatLon,
+                            content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
+                            yAnchor: 3.2 
+                        });
                     }
 
-                    // 이후 실시간 추적 리스너를 달고 상태를 'on'으로 변경
                     if (!isListenersAttached) {
                         listenToLocation();
                         listenToStatus();
