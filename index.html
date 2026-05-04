@@ -89,8 +89,8 @@ span {
         #status-display { font-weight: bold; margin-left: 5px; }
         #timer-display { color: #ffeb3b; font-weight: bold; margin-left: 3px; }
 
-        /* 3. 전체 화면 지도 */
-        #map { width: 100%; height: 100vh; z-index: 1; }
+        /* 3. 전체 화면 지도 (수정: 상단 바 높이 45px만큼 지도를 아래로 내림) */
+        #map { width: 100%; height: calc(100vh - 45px); margin-top: 45px; z-index: 1; }
 
         /* [추가] 카카오맵 기본 컨트롤러(지도/위성, 확대/축소)를 상단 바 아래로 내리기 */
         .custom_typecontrol { position: absolute; top: 60px; right: 10px; z-index: 2; }
@@ -170,11 +170,13 @@ span {
         };
         const map = new kakao.maps.Map(mapContainer, mapOption);
         
-        // [수정] 줌 및 지도/스카이뷰 컨트롤러 추가 (상단 바에 안 가려지도록 위치 조정)
+        // [수정] 줌 및 지도/스카이뷰 컨트롤러 추가
         const mapTypeControl = new kakao.maps.MapTypeControl();
         map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+        
+        // (에러를 유발했던 mapDiv.children... 코드는 완전히 삭제했습니다)
         
         // 추가: 카카오맵 내부 요소의 마진을 강제로 줘서 위에서 50px 띄웁니다.
         const mapDiv = document.getElementById('map');
