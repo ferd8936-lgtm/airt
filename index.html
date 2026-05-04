@@ -89,8 +89,13 @@ span {
         #status-display { font-weight: bold; margin-left: 5px; }
         #timer-display { color: #ffeb3b; font-weight: bold; margin-left: 3px; }
 
-        /* 3. 전체 화면 지도 (수정: 상단 바 높이 45px만큼 지도를 아래로 내림) */
+        /* 3. 전체 화면 지도 */
         #map { width: 100%; height: calc(100vh - 45px); margin-top: 45px; z-index: 1; }
+
+        /* [추가] 지도 컨트롤(위성, 줌)을 상단 바 아래로 강제로 내리는 설정 */
+       #map > div > div:nth-child(2) {
+              margin-top: 50px !important;
+       }
 
         /* [추가] 카카오맵 기본 컨트롤러(지도/위성, 확대/축소)를 상단 바 아래로 내리기 */
         .custom_typecontrol { position: absolute; top: 60px; right: 10px; z-index: 2; }
@@ -176,12 +181,8 @@ span {
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
         
-        // (에러를 유발했던 mapDiv.children... 코드는 완전히 삭제했습니다)
+        // (에러를 유발했던 mapDiv... 관련 코드 2줄이 삭제된 상태여야 합니다)
         
-        // 추가: 카카오맵 내부 요소의 마진을 강제로 줘서 위에서 50px 띄웁니다.
-        const mapDiv = document.getElementById('map');
-        mapDiv.children[0].children[1].style.marginTop = '50px';
-
         // --- [여기서부터 추가] 로드뷰 객체 초기화 ---
         const rvContainer = document.getElementById('roadview');
         const rv = new kakao.maps.Roadview(rvContainer);
@@ -337,10 +338,11 @@ span {
                         if (infowindow) infowindow.setMap(null); 
                         const batteryLevel = data.battery !== undefined ? data.battery : '--';
                         infowindow = new kakao.maps.CustomOverlay({
-                            map: map,
-                            position: moveLatLon,
-                            content: `<div style="font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                            yAnchor: 3.2 // 대표님이 요청하신 수치로 수정 완료
+                             map: map,
+                             position: moveLatLon,
+                             content: `<div style="font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
+                             // [수정] 대표님 요청 수치 3.2 반영
+                             yAnchor: 3.2 
                         });
                     }
                 } // 누락되었던 괄호 복구
