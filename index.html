@@ -92,6 +92,17 @@ span {
         /* 3. 전체 화면 지도 */
         #map { width: 100%; height: 100vh; z-index: 1; }
 
+       /* [추가] 로드뷰 컨테이너 및 닫기 버튼 스타일 */
+        #roadview-container {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 500; display: none;
+            border-top: 3px solid #1E88FF; box-sizing: border-box; background: #eee;
+        }
+        #roadview { width: 100%; height: 100%; }
+        #btn-close-rv {
+            position: absolute; top: 10px; right: 10px; z-index: 501;
+            padding: 8px 15px; background: #ff4d4d; color: white; border: none; border-radius: 5px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
         /* 4. 모바일 최적화 */
         @media (max-width: 600px) {
             #control-bar { padding: 8px; gap: 5px; }
@@ -126,6 +137,12 @@ span {
 
     <div id="map"></div>
 
+    <!-- [추가] 로드뷰 컨테이너 (평소에는 숨겨져 있습니다) -->
+    <div id="roadview-container">
+        <button id="btn-close-rv" onclick="closeRoadview()">X 닫기</button>
+        <div id="roadview"></div>
+    </div>
+
     <script>
         // 파이어베이스 설정 (기존 정보 유지)
         const firebaseConfig = {
@@ -153,9 +170,18 @@ span {
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
-        // [수정 6 반영] 위성지도 및 로드뷰 컨트롤러 추가
+        // [수정 6 반영] 위성지도 및 로드뷰 컨트롤러 추가 (이전에 작성하신 부분)
         const mapTypeControl = new kakao.maps.MapTypeControl();
         map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+        // --- [여기서부터 추가] 로드뷰 객체 초기화 ---
+        const rvContainer = document.getElementById('roadview');
+        const rv = new kakao.maps.Roadview(rvContainer);
+        const rvClient = new kakao.maps.RoadviewClient();
+
+        function closeRoadview() {
+            document.getElementById('roadview-container').style.display = 'none';
+        }
 
         let marker = null;
         let infowindow = null; // 배터리 표시 팝업창 (CustomOverlay 객체 담김)
@@ -280,6 +306,20 @@ span {
                         } else {
                             marker = new kakao.maps.Marker({ position: moveLatLon });
                             marker.setMap(map);
+                            
+                            // [추가] 마커를 클릭하면 로드뷰를 보여주는 이벤트 (최초 1회만 등록)
+                            kakao.maps.event.addListener(marker, 'click', function() {
+                                const pos = marker.getPosition();
+                                // 반경 50m 이내의 가장 가까운 길가의 로드뷰 파노라마 ID를 찾습니다.
+                                rvClient.getNearestPanoId(pos, 50, function(panoId) {
+                                    if (panoId !== null) {
+                                        document.getElementById('roadview-container').style.display = 'block';
+                                        rv.setPanoId(panoId, pos);
+                                    } else {
+                                        alert("아이 위치 주변(50m 이내)에 로드뷰가 촬영된 도로가 없습니다.");
+                                    }
+                                });
+                            });
                         }
 
                         // 배터리 정보 표시 (기존 유지)
@@ -289,7 +329,7 @@ span {
                             map: map,
                             position: moveLatLon,
                             content: `<div style="font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                            yAnchor: 4.5 // [수정 4 반영] 아이콘 상단 고정을 위해 3.2에서 4.5로 상향
+                            yAnchor: 2.5 // [수정 4 반영] 아이콘 상단 고정을 위해 3.2에서 4.5로 상향
                         });
                     }
                 }
