@@ -314,21 +314,28 @@ span {
                         if (marker) {
                             marker.setPosition(moveLatLon);
                         } else {
-                            marker = new kakao.maps.Marker({ position: moveLatLon });
+                            // 1. 마커를 만들고 클릭 가능하게 설정합니다.
+                            marker = new kakao.maps.Marker({ 
+                                position: moveLatLon,
+                                clickable: true // 클릭 가능하도록 설정
+                            });
                             marker.setMap(map);
                             
-                            // [수정 완료] 마커 생성 시 로드뷰 클릭 이벤트를 '딱 한 번' 강력하게 고정합니다.
+                            // 2. 마커 클릭 시 로드뷰 실행 로직 보강
                             kakao.maps.event.addListener(marker, 'click', function() {
-                                // 항상 '현재 마커가 있는 최신 위치'를 가져옵니다.
                                 const currentPos = marker.getPosition();
                                 
-                                rvClient.getNearestPanoId(currentPos, 50, function(panoId) {
+                                // 반경을 100m로 넓혀서 근처 로드뷰를 더 잘 찾게 합니다.
+                                rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
                                     if (panoId !== null) {
-                                        // 로드뷰 창을 열고 해당 위치의 파노라마 사진을 띄웁니다.
-                                        document.getElementById('roadview-container').style.display = 'block';
+                                        const rvCont = document.getElementById('roadview-container');
+                                        rvCont.style.display = 'block'; // 창을 먼저 띄우고
+                                        
+                                        // [핵심] 창이 나타난 후 로드뷰를 다시 그려주는 신호를 보냅니다.
+                                        rv.relayout(); 
                                         rv.setPanoId(panoId, currentPos);
                                     } else {
-                                        alert("이 근처(반경 50m)에는 카카오 로드뷰 차량이 촬영한 도로가 없습니다.");
+                                        alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
                                     }
                                 });
                             });
