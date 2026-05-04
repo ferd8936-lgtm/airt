@@ -312,33 +312,31 @@ span {
                         
                         // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
                         if (marker) {
-                            marker.setPosition(moveLatLon);
-                        } else {
-                            // 1. 마커를 만들고 클릭 가능하게 설정합니다.
-                            marker = new kakao.maps.Marker({ 
-                                position: moveLatLon,
-                                clickable: true // 클릭 가능하도록 설정
-                            });
-                            marker.setMap(map);
+                        marker.setPosition(lastLatLon);
+                    } else {
+                        // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
+                        marker = new kakao.maps.Marker({ 
+                            position: lastLatLon,
+                            clickable: true 
+                        });
+                        marker.setMap(map);
+
+                        // 2. [추가] 처음 연결된 위치에서도 로드뷰가 열리도록 클릭 이벤트를 심어줍니다.
+                        kakao.maps.event.addListener(marker, 'click', function() {
+                            // 클릭하는 시점의 가장 최신 마커 위치를 가져옵니다.
+                            const currentPos = marker.getPosition();
                             
-                            // [수정 반영] rv.relayout(); 한 줄 추가
-                            kakao.maps.event.addListener(marker, 'click', function() {
-                                  const currentPos = marker.getPosition();
-    
-                                  rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
-                                       if (panoId !== null) {
-                                          // 로드뷰 창을 먼저 띄웁니다.
-                                          document.getElementById('roadview-container').style.display = 'block';
-            
-                                          // [중요] 창이 열린 직후 레이아웃을 다시 잡아줘야 사진이 정상적으로 뜹니다.
-                                          rv.relayout(); 
-                                          rv.setPanoId(panoId, currentPos);
-                                       } else {
-                                          alert("이 근처(반경 100m)에는 카카오 로드뷰 사진이 없습니다.");
-                                       }
-                                   });
-                               });
-                        }
+                            rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
+                                if (panoId !== null) {
+                                    document.getElementById('roadview-container').style.display = 'block';
+                                    rv.relayout();
+                                    rv.setPanoId(panoId, currentPos);
+                                } else {
+                                    alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
+                                }
+                            });
+                        });
+                    }
 
                         // 배터리 정보 표시
                         if (infowindow) infowindow.setMap(null); 
