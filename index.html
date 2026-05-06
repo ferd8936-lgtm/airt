@@ -169,6 +169,13 @@ span {
     <!-- 오류의 원인이었던 중복된 <div id="map"></div> 를 1개로 정리했습니다 -->
     <div id="map"></div>
 
+    <!-- [추가] 내 위치 확인 버튼 (과녁 모양 아이콘) -->
+    <div id="btn-my-location" onclick="findMyLocation()" title="내 위치 확인">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+        </svg>
+    </div>
+
     <!-- [추가] 로드뷰 컨테이너 (평소에는 숨겨져 있습니다) -->
     <div id="roadview-container">
         <button id="btn-close-rv" onclick="closeRoadview()">X 닫기</button>
@@ -426,6 +433,42 @@ span {
             const sec = timeLeft % 60;
             document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
         }
+
+    // --- [여기서부터 추가] 내 위치 확인 기능 ---
+        let myLocationMarker = null;
+
+        function findMyLocation() {
+            // 브라우저가 GPS를 지원하는지 확인
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const locPosition = new kakao.maps.LatLng(lat, lon);
+
+                    // 지도를 내 위치로 부드럽게 이동
+                    map.panTo(locPosition);
+
+                    // 기존 마커가 있다면 위치를 옮기고, 없다면 새로 생성 (아이 마커와 구분되는 기본 빨간색 핀)
+                    if (myLocationMarker) {
+                        myLocationMarker.setPosition(locPosition);
+                    } else {
+                        myLocationMarker = new kakao.maps.Marker({
+                            position: locPosition
+                        });
+                        myLocationMarker.setMap(map);
+                    }
+                }, function(error) {
+                    alert("휴대폰/PC의 위치(GPS) 권한이 차단되었거나 위치를 가져올 수 없습니다.");
+                }, {
+                    enableHighAccuracy: true, // 가장 정확한 위치 요청
+                    maximumAge: 0,
+                    timeout: 5000
+                });
+            } else {
+                alert("이 브라우저에서는 위치 확인 기능을 지원하지 않습니다.");
+            }
+        }
+        // ---------------------------------------------
     </script>
 </body>
 </html>
