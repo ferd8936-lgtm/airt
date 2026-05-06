@@ -367,31 +367,31 @@ span {
                         
                         // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
                         if (marker) {
-                        marker.setPosition(lastLatLon);
-                    } else {
-                        // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
-                        marker = new kakao.maps.Marker({ 
-                            position: lastLatLon,
-                            clickable: true 
-                        });
-                        marker.setMap(map);
-
-                        // 2. [추가] 처음 연결된 위치에서도 로드뷰가 열리도록 클릭 이벤트를 심어줍니다.
-                        kakao.maps.event.addListener(marker, 'click', function() {
-                            // 클릭하는 시점의 가장 최신 마커 위치를 가져옵니다.
-                            const currentPos = marker.getPosition();
-                            
-                            rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
-                                if (panoId !== null) {
-                                    document.getElementById('roadview-container').style.display = 'block';
-                                    rv.relayout();
-                                    rv.setPanoId(panoId, currentPos);
-                                } else {
-                                    alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
-                                }
+                            // [오류 해결] lastLatLon이 아닌 실시간 좌표 moveLatLon으로 이동시킵니다.
+                            marker.setPosition(moveLatLon); 
+                        } else {
+                            // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
+                            marker = new kakao.maps.Marker({ 
+                                position: moveLatLon, // [오류 해결] 여기도 moveLatLon으로 수정
+                                clickable: true 
                             });
-                        });
-                    }
+                            marker.setMap(map);
+
+                            // 2. [추가] 처음 연결된 위치에서도 로드뷰가 열리도록 클릭 이벤트를 심어줍니다.
+                            kakao.maps.event.addListener(marker, 'click', function() {
+                                const currentPos = marker.getPosition();
+                                
+                                rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
+                                    if (panoId !== null) {
+                                        document.getElementById('roadview-container').style.display = 'block';
+                                        rv.relayout();
+                                        rv.setPanoId(panoId, currentPos);
+                                    } else {
+                                        alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
+                                    }
+                                });
+                            });
+                        }
 
                         // 배터리 정보 표시
                         if (infowindow) infowindow.setMap(null); 
@@ -448,12 +448,18 @@ span {
                     // 지도를 내 위치로 부드럽게 이동
                     map.panTo(locPosition);
 
-                    // 기존 마커가 있다면 위치를 옮기고, 없다면 새로 생성 (아이 마커와 구분되는 기본 빨간색 핀)
+                    // 기존 마커가 있다면 위치를 옮기고, 없다면 새로 생성 (아이 마커와 구분되는 빨간색 핀)
                     if (myLocationMarker) {
                         myLocationMarker.setPosition(locPosition);
                     } else {
+                        // [색상 변경 반영] 카카오 기본 빨간색 마커 이미지 적용
+                        const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png"; 
+                        const imageSize = new kakao.maps.Size(31, 35); 
+                        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize); 
+
                         myLocationMarker = new kakao.maps.Marker({
-                            position: locPosition
+                            position: locPosition,
+                            image: markerImage // 빨간색 이미지를 씌웁니다
                         });
                         myLocationMarker.setMap(map);
                     }
