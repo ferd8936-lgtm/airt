@@ -475,6 +475,20 @@ span {
             }
         }
         // ---------------------------------------------
+
+        // --- [추가] 브라우저 화면 복귀 시 자동 재연결 로직 ---
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState === 'visible') {
+                const btn = document.getElementById('btn-toggle');
+                
+                // 앱이 추적 중(상태: 해제 버튼)일 때 화면으로 돌아오면 밀린 통신을 강제로 깨웁니다.
+                if (btn && btn.innerText === "해제") {
+                    clearTimeout(disconnectTimer); // 꼬여있는 30초 종료 타이머 초기화
+                    listenToLocation(); // 실시간 위치 리스너 즉시 재가동
+                    startTimer(); // 10분 타이머 새로고침
+                }
+            }
+        });
     </script>
 </body>
 </html>
