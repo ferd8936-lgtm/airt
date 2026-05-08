@@ -249,7 +249,7 @@ span {
             
             if (btn.innerText === "연결") {
                 // [추가] 연결 시작 전 안내 팝업창을 띄웁니다.
-                alert("30초 동안 앱 연결과 위치를 확인합니다. 접속 시 10분 동안 위치를 추적합니다. 다른 아이디 연결시 웹페이지 새로고침이 필요합니다.");
+                alert("약 30초 동안 현재 위치를 확인하고 10분 동안 위치를 추적합니다. 연결이 잘 안되거나 다른 아이디로 연결할 경우 웹페이지 새로고침이 필요합니다.");
                 
                 localStorage.setItem('lastChildId', currentChildId);
 
@@ -266,16 +266,21 @@ span {
                     const batteryLevel = data.battery !== undefined ? data.battery : '--';
 
                     if (lat && lng) {
-                        const lastLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
-                        map.setLevel(2);
-                        map.panTo(lastLatLon);
+                        const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
-                        // [마커 생성 및 로드뷰 리스너 보강]
+                        // [추가] 10분 타이머(600초) 기준, 9분 30초(570초) 이상 남았을 때만 지도를 쫓아가게 합니다.
+                        if (timeLeft >= 570) {
+                            map.panTo(moveLatLon); 
+                        }
+                        
+                        // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
                         if (marker) {
-                            marker.setPosition(lastLatLon);
+                            // [오류 해결] lastLatLon이 아닌 실시간 좌표 moveLatLon으로 이동시킵니다.
+                            marker.setPosition(moveLatLon); 
                         } else {
+                            // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
                             marker = new kakao.maps.Marker({ 
-                                position: lastLatLon,
+                                position: moveLatLon, // [오류 해결] 여기도 moveLatLon으로 수정
                                 clickable: true 
                             });
                             marker.setMap(map);
