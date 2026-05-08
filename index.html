@@ -420,21 +420,6 @@ span {
         }); 
     }
 
-                        // 배터리 정보 표시
-                        if (infowindow) infowindow.setMap(null); 
-                        const batteryLevel = data.battery !== undefined ? data.battery : '--';
-                        // [수정 반영] content 스타일 안에 pointer-events: none; 추가
-                        infowindow = new kakao.maps.CustomOverlay({
-                             map: map,
-                             position: moveLatLon,
-                             content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                             yAnchor: 3.5 
-                        });
-                    }
-                } // 누락되었던 괄호 복구
-            }); // 누락되었던 괄호 복구
-        } // 누락되었던 괄호 복구
-
         function startTimer() {
             clearInterval(timerInterval);
             timeLeft = 600;
