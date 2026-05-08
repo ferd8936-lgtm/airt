@@ -248,6 +248,9 @@ span {
             currentChildId = inputId;
             
             if (btn.innerText === "연결") {
+                // [추가] 연결 시작 전 안내 팝업창을 띄웁니다.
+                alert("30초 동안 앱 연결과 위치를 확인합니다. 접속 시 10분 동안 위치를 추적합니다. 다른 아이디 연결시 웹페이지 새로고침이 필요합니다.");
+                
                 localStorage.setItem('lastChildId', currentChildId);
 
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
