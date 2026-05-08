@@ -360,46 +360,65 @@ span {
                 const data = snapshot.val();
                 
                 if (data) {
-                    // 1. 연결 해제(앱 종료 및 통신 끊김) 감지 타이머 (30초)
-                    clearTimeout(disconnectTimer);
-                    disconnectTimer = setTimeout(() => {
-                        alert("현재 앱과 연결이 해제되었습니다.");
-                        setTracking('off');
-                    }, 30000);
+                // 1. 연결 해제(앱 종료 및 통신 끊김) 감지 타이머 (30초)
+                clearTimeout(disconnectTimer);
+                disconnectTimer = setTimeout(() => {
+                    alert("현재 앱과 연결이 해제되었습니다.");
+                    setTracking('off');
+                }, 30000);
 
-                    const lat = data.lat || data.latitude;
-                    const lng = data.lng || data.longitude;
+                const lat = data.lat || data.latitude;
+                const lng = data.lng || data.longitude;
+                
+                if (lat && lng) {
+                    const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                     
-                    if (lat && lng) {
-                        const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
-                        
-                        // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
-                        if (marker) {
-                            // [오류 해결] lastLatLon이 아닌 실시간 좌표 moveLatLon으로 이동시킵니다.
-                            marker.setPosition(moveLatLon); 
-                        } else {
-                            // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
-                            marker = new kakao.maps.Marker({ 
-                                position: moveLatLon, // [오류 해결] 여기도 moveLatLon으로 수정
-                                clickable: true 
-                            });
-                            marker.setMap(map);
+                    // [수정 반영] 10분 타이머(600초) 기준, 9분 30초(570초) 이상 남았을 때만 지도를 쫓아가게 합니다.
+                    if (timeLeft >= 570) {
+                        map.panTo(moveLatLon); 
+                    }
+                    
+                    // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
+                    if (marker) {
+                        marker.setPosition(moveLatLon); 
+                    } else {
+                        // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
+                        marker = new kakao.maps.Marker({ 
+                            position: moveLatLon, 
+                            clickable: true 
+                        });
+                        marker.setMap(map);
 
-                            // 2. [추가] 처음 연결된 위치에서도 로드뷰가 열리도록 클릭 이벤트를 심어줍니다.
-                            kakao.maps.event.addListener(marker, 'click', function() {
-                                const currentPos = marker.getPosition();
-                                
-                                rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
-                                    if (panoId !== null) {
-                                        document.getElementById('roadview-container').style.display = 'block';
-                                        rv.relayout();
-                                        rv.setPanoId(panoId, currentPos);
-                                    } else {
-                                        alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
-                                    }
-                                });
+                        // 2. 처음 연결된 위치에서도 로드뷰가 열리도록 클릭 이벤트를 심어줍니다.
+                        kakao.maps.event.addListener(marker, 'click', function() {
+                            const currentPos = marker.getPosition();
+                            
+                            rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
+                                if (panoId !== null) {
+                                    document.getElementById('roadview-container').style.display = 'block';
+                                    rv.relayout();
+                                    rv.setPanoId(panoId, currentPos);
+                                } else {
+                                    alert("아이 위치 주변(100m 이내)에 로드뷰 사진이 없습니다.");
+                                }
                             });
-                        }
+                        });
+                    }
+
+                    // 배터리 정보 표시
+                    if (infowindow) infowindow.setMap(null); 
+                    const batteryLevel = data.battery !== undefined ? data.battery : '--';
+                    // content 스타일 안에 pointer-events: none; 유지
+                    infowindow = new kakao.maps.CustomOverlay({
+                         map: map,
+                         position: moveLatLon,
+                         content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
+                         yAnchor: 3.5 
+                    });
+                }
+            } 
+        }); 
+    }
 
                         // 배터리 정보 표시
                         if (infowindow) infowindow.setMap(null); 
