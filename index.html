@@ -304,7 +304,7 @@ span {
                         if (infowindow) infowindow.setMap(null); 
                         infowindow = new kakao.maps.CustomOverlay({
                             map: map,
-                            position: lastLatLon,
+                            position: moveLatLon, // <--- [오류 해결] 이 부분이 lastLatLon으로 남아있어 앱이 멈췄습니다.
                             content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
                             yAnchor: 3.5 
                         });
