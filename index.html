@@ -224,6 +224,7 @@ span {
 
         let marker = null;
         let infowindow = null; // 배터리 표시 팝업창 (CustomOverlay 객체 담김)
+        let accuracyCircle = null; // [추가] 오차 반경을 그릴 원 객체
         let currentChildId = "";
         let timerInterval = null;
         let timeLeft = 600;
@@ -369,6 +370,7 @@ span {
 
                 const lat = data.lat || data.latitude;
                 const lng = data.lng || data.longitude;
+                const accuracy = data.accuracy || 30; // [추가] 앱에서 전송한 오차 반경 수신
                 
                 if (lat && lng) {
                     const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
@@ -403,6 +405,23 @@ span {
                                 }
                             });
                         });
+                    }
+
+                    // [추가] 마커 주변에 실시간 오차 반경 원(Circle)을 그려줍니다.
+                    if (accuracyCircle) {
+                        accuracyCircle.setPosition(moveLatLon);
+                        accuracyCircle.setRadius(accuracy); 
+                    } else {
+                        accuracyCircle = new kakao.maps.Circle({
+                            center: moveLatLon,
+                            radius: accuracy,       // 스마트폰 오차 반경(m) 크기 반영
+                            strokeWeight: 1,        // 선 두께
+                            strokeColor: '#1E88FF', // 파란색 선
+                            strokeOpacity: 0.6,     // 선 투명도
+                            fillColor: '#1E88FF',   // 채우기 색상
+                            fillOpacity: 0.15       // 반투명 설정
+                        });
+                        accuracyCircle.setMap(map);
                     }
 
                     // 배터리 정보 표시
