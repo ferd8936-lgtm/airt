@@ -254,6 +254,12 @@ span {
                 
                 localStorage.setItem('lastChildId', currentChildId);
 
+                // [웹 잔상 완벽 제거 1] 연결 버튼 누르는 순간 기존 마커 지우고 대기 상태 돌입
+                if (marker) { marker.setMap(null); }
+                if (accuracyCircle) { accuracyCircle.setMap(null); }
+                if (infowindow) { infowindow.setMap(null); }
+                document.getElementById('status-display').innerText = "최신 위치 스캔 중...";
+
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
                     const data = snapshot.val();
                     
@@ -265,8 +271,12 @@ span {
                     const lat = data.lat || data.latitude;
                     const lng = data.lng || data.longitude;
                     const batteryLevel = data.battery !== undefined ? data.battery : '--';
+                    const locTime = data.locTime || 0; // 앱에서 보낸 진짜 위치 시간
 
-                    if (lat && lng) {
+                    // [웹 잔상 완벽 제거 2] 1분(60000ms) 이내의 진짜 최신 데이터만 초기 화면에 띄웁니다.
+                    const isFresh = (Date.now() - locTime) < 60000;
+
+                    if (lat && lng && isFresh) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
                         // [추가] 10분 타이머(600초) 기준, 9분 30초(570초) 이상 남았을 때만 지도를 쫓아가게 합니다.
@@ -371,7 +381,24 @@ span {
                 const lat = data.lat || data.latitude;
                 const lng = data.lng || data.longitude;
                 const accuracy = data.accuracy || 30; // [추가] 앱에서 전송한 오차 반경 수신
+                const locTime = data.locTime || 0;
                 
+                // [웹 잔상 완벽 제거 3] 1분 이상 지난 낡은 위치면 화면에 그리지 않고 무시합니다.
+                if (Date.now() - locTime > 60000) {
+                    if (marker) marker.setMap(null);
+                    if (accuracyCircle) accuracyCircle.setMap(null);
+                    if (infowindow) infowindow.setMap(null);
+                    document.getElementById('status-display').innerText = "최신 위치 스캔 중...";
+                    return; 
+                }
+
+                // 정상 데이터 수신 시 상태창 업데이트 (대기중 문구 원복)
+                const btn = document.getElementById('btn-toggle');
+                if (btn && btn.innerText === "해제") {
+                    document.getElementById('status-display').innerText = "위치 추적 중";
+                    document.getElementById('status-display').style.color = "#ff4d4d";
+                }
+
                 if (lat && lng) {
                     const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                     
