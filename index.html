@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>아이 위치 관제 시스템</title>
 
-    <!-- 카카오맵 및 파이어베이스 라이브러리 -->
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=065ad8c378bbf19cc65c8fdf44a81d4d"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* 1. 폰트 설정 */
         @font-face {
             font-family: 'NexonLv2Gothic';
             src: url('NexonLv2Gothic_2.ttf') format('truetype');
@@ -22,85 +20,37 @@
             font-family: 'NexonLv2Gothic', sans-serif; overflow: hidden;
         }
 
-        /* 2. 상단 제어 바 (웹/모바일 공통 1줄 고정) */
         #control-bar {
             position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
             background: rgba(0, 0, 0, 0.75); color: white;
             display: flex; align-items: center; justify-content: flex-start;
             padding: 10px; gap: 8px; 
-            flex-wrap: nowrap; /* 절대 줄바꿈 하지 않음 */
-            overflow-x: auto; /* 화면이 좁으면 좌우 스크롤 허용 */
-            white-space: nowrap; /* 내부 텍스트 쪼개짐 방지 */
+            flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; 
         }
 
-        /* [수정 부분 1] 상단 바 요소들의 정렬과 위치 미세 조정 */
-
-.section { 
-    display: flex; 
-    align-items: center; 
-    gap: 5px; 
-    height: 100%; /* 부모 높이에 맞춰 정렬 기준을 잡습니다 */
-}
-
-/* 텍스트(아이디:, 대기 중 등) 스타일 */
-span {
-    display: inline-flex;
-    align-items: center;
-    line-height: 1;
-    font-size: 14px;
-}
-
-/* 입력창과 버튼: 모서리 둥글게, 아주 얇은 테두리 적용 */
+        .section { display: flex; align-items: center; gap: 5px; height: 100%; }
+        span { display: inline-flex; align-items: center; line-height: 1; font-size: 14px; }
+        
         input, button {
-            height: 21px; 
-            box-sizing: border-box;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            vertical-align: middle;
-            transform: translateY(-1px);
-            
-            /* 추가/수정된 디자인 */
-            border-radius: 6px; /* 모서리 둥글게 */
-            border: 1px solid rgba(255, 255, 255, 0.3); /* 아주 얇은 테두리 느낌 */
-            padding: 0 10px;
+            height: 21px; box-sizing: border-box; display: inline-flex;
+            align-items: center; justify-content: center; vertical-align: middle;
+            transform: translateY(-1px); border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.3); padding: 0 10px;
         }
+        input { background: white; color: black; border: 1px solid #ddd; }
+        button { border: 1px solid rgba(0, 0, 0, 0.1); cursor: pointer;}
+        .icon-svg { transform: translateY(-1px); margin-right: 2px; }
 
-        input { 
-            background: white; 
-            color: black; 
-            border: 1px solid #ddd; /* 입력창은 좀 더 또렷한 선 */
-        }
-
-        button {
-            border: 1px solid rgba(0, 0, 0, 0.1); /* 버튼 테두리 */
-        }
-
-/* 아이콘 전용: 위로 1px 올리고 오른쪽 여백 추가 */
-.icon-svg {
-    transform: translateY(-1px);
-    margin-right: 2px;
-}
-
-        /* 버튼 상태 색상 */
-        .btn-connect { background: #007bff; color: white; } /* 연결 (파랑) */
-        .btn-disconnect { background: #6c757d; color: white; } /* 해제 (회색) */
+        .btn-connect { background: #007bff; color: white; } 
+        .btn-disconnect { background: #6c757d; color: white; } 
 
         #status-display { font-weight: bold; margin-left: 5px; }
         #timer-display { color: #ffeb3b; font-weight: bold; margin-left: 3px; }
 
-        /* 3. 전체 화면 지도 */
         #map { width: 100%; height: calc(100vh - 45px); margin-top: 45px; z-index: 1; }
-
-        /* [추가] 지도 컨트롤(위성, 줌)을 상단 바 아래로 강제로 내리는 설정 */
-       #map > div > div:nth-child(2) {
-              margin-top: 50px !important;
-       }
-
-        /* [추가] 카카오맵 기본 컨트롤러(지도/위성, 확대/축소)를 상단 바 아래로 내리기 */
+        #map > div > div:nth-child(2) { margin-top: 50px !important; }
         .custom_typecontrol { position: absolute; top: 60px; right: 10px; z-index: 2; }
 
-       /* [추가] 로드뷰 컨테이너 및 닫기 버튼 스타일 */
         #roadview-container {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 500; display: none;
             border-top: 3px solid #1E88FF; box-sizing: border-box; background: #eee;
@@ -111,35 +61,18 @@ span {
             padding: 8px 15px; background: #ff4d4d; color: white; border: none; border-radius: 5px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        /* [추가] 내 위치 확인 버튼 스타일 (우측 하단 배치) */
         #btn-my-location {
-            position: absolute;
-            bottom: 20px;
-            right: 10px;
-            z-index: 2;
-            width: 40px;
-            height: 40px;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: absolute; bottom: 20px; right: 10px; z-index: 2; width: 40px; height: 40px;
+            background-color: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
         }
-        #btn-my-location svg {
-            width: 24px;
-            height: 24px;
-            fill: #333;
-        }
+        #btn-my-location svg { width: 24px; height: 24px; fill: #333; }
 
-        /* 4. 모바일 최적화 */
         @media (max-width: 600px) {
             #control-bar { padding: 8px; gap: 5px; }
             input { width: 78px; padding: 0 4px; } 
             span { font-size: 12px; height: 26px; } 
-            input, button { height: 21px; font-size: 12px; } /* 모바일도 높이 21px로 축소 */
+            input, button { height: 21px; font-size: 12px; } 
             #control-bar .section:first-child span:first-child { font-size: 14px; }
         }
     </style>
@@ -166,24 +99,20 @@ span {
         </div>
     </div>
 
-    <!-- 오류의 원인이었던 중복된 <div id="map"></div> 를 1개로 정리했습니다 -->
     <div id="map"></div>
 
-    <!-- [추가] 내 위치 확인 버튼 (과녁 모양 아이콘) -->
     <div id="btn-my-location" onclick="findMyLocation()" title="내 위치 확인">
         <svg viewBox="0 0 24 24">
             <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
         </svg>
     </div>
 
-    <!-- [추가] 로드뷰 컨테이너 (평소에는 숨겨져 있습니다) -->
     <div id="roadview-container">
         <button id="btn-close-rv" onclick="closeRoadview()">X 닫기</button>
         <div id="roadview"></div>
     </div>
 
     <script>
-        // 파이어베이스 설정 (기존 정보 유지)
         const firebaseConfig = {
             apiKey: "AIzaSyB2Gkfi4bqVtBXO-a2dN3Bq8UN9DCczrb8",
             authDomain: "childtracker-ceec9.firebaseapp.com",
@@ -197,23 +126,18 @@ span {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 카카오맵 초기화
         const mapContainer = document.getElementById('map');
         const mapOption = {
-            center: new kakao.maps.LatLng(35.8714, 128.6014), // 대구광역시 중심
-            level: 5 // 확대 레벨
+            center: new kakao.maps.LatLng(35.8714, 128.6014),
+            level: 5 
         };
         const map = new kakao.maps.Map(mapContainer, mapOption);
         
-        // [수정] 줌 및 지도/스카이뷰 컨트롤러 추가
         const mapTypeControl = new kakao.maps.MapTypeControl();
         map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
         
-        // (에러를 유발했던 mapDiv... 관련 코드 2줄이 삭제된 상태여야 합니다)
-        
-        // --- [여기서부터 추가] 로드뷰 객체 초기화 ---
         const rvContainer = document.getElementById('roadview');
         const rv = new kakao.maps.Roadview(rvContainer);
         const rvClient = new kakao.maps.RoadviewClient();
@@ -223,16 +147,26 @@ span {
         }
 
         let marker = null;
-        let infowindow = null; // 배터리 표시 팝업창 (CustomOverlay 객체 담김)
-        let accuracyCircle = null; // [추가] 오차 반경을 그릴 원 객체
+        let infowindow = null; 
+        let accuracyCircle = null; 
         let currentChildId = "";
         let timerInterval = null;
         let timeLeft = 600;
-        let disconnectTimer = null; // 데이터 수신 중단(앱 종료) 감지 타이머
+        let disconnectTimer = null; 
 
-        let isListenersAttached = false; // 중복 실행 방지용
+        let isListenersAttached = false; 
 
-        // [수정 5 반영] 페이지 로드 시 로컬 스토리지에 저장된 이전 아이디 불러오기
+        // [기능 추가 1] 이동 경로(선) 그리기 객체 세팅
+        let pathCoordinates = [];
+        let polyline = new kakao.maps.Polyline({
+            path: pathCoordinates,
+            strokeWeight: 4,        
+            strokeColor: '#FF0000', 
+            strokeOpacity: 0.7,     
+            strokeStyle: 'solid'    
+        });
+        polyline.setMap(map);
+
         window.onload = function() {
             const savedChildId = localStorage.getItem('lastChildId');
             if (savedChildId) {
@@ -240,7 +174,6 @@ span {
             }
         };
 
-        // 1. 연결 버튼 클릭 시 앱 상태 확인 및 토글 함수
         function toggleConnection() {
             const btn = document.getElementById('btn-toggle');
             const inputId = document.getElementById('child-id').value.trim();
@@ -249,15 +182,18 @@ span {
             currentChildId = inputId;
             
             if (btn.innerText === "연결") {
-                // [추가] 연결 시작 전 안내 팝업창을 띄웁니다.
                 alert("약 30초 동안 현재 위치를 확인하고 10분 동안 위치를 추적합니다. 연결이 잘 안되거나 다른 아이디로 연결할 경우 웹페이지 새로고침이 필요합니다.");
                 
                 localStorage.setItem('lastChildId', currentChildId);
 
-                // [웹 잔상 완벽 제거 1] 연결 버튼 누르는 순간 기존 마커 지우고 대기 상태 돌입
                 if (marker) { marker.setMap(null); }
                 if (accuracyCircle) { accuracyCircle.setMap(null); }
                 if (infowindow) { infowindow.setMap(null); }
+                
+                // 선 초기화
+                pathCoordinates = []; 
+                polyline.setPath(pathCoordinates);
+                
                 document.getElementById('status-display').innerText = "최신 위치 스캔 중...";
 
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
@@ -271,32 +207,29 @@ span {
                     const lat = data.lat || data.latitude;
                     const lng = data.lng || data.longitude;
                     const batteryLevel = data.battery !== undefined ? data.battery : '--';
-                    const locTime = data.locTime || 0; // 앱에서 보낸 진짜 위치 시간
+                    const locTime = data.locTime || 0; 
+                    const accuracy = data.accuracy || 30;
 
-                    // [웹 잔상 완벽 제거 2] 1분(60000ms) 이내의 진짜 최신 데이터만 초기 화면에 띄웁니다.
-                    const isFresh = (Date.now() - locTime) < 60000;
+                    // [기능 추가 2] 시간 오차 방어 (5분으로 넉넉하게 변경)
+                    const isFresh = (Date.now() - locTime) < 300000;
 
                     if (lat && lng && isFresh) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
-                        // [추가] 10분 타이머(600초) 기준, 9분 30초(570초) 이상 남았을 때만 지도를 쫓아가게 합니다.
-                        if (timeLeft >= 570) {
-                            map.panTo(moveLatLon); 
-                        }
+                        // 처음 경로 추가
+                        pathCoordinates = [moveLatLon];
+                        polyline.setPath(pathCoordinates);
+                        map.panTo(moveLatLon); 
                         
-                        // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
                         if (marker) {
-                            // [오류 해결] lastLatLon이 아닌 실시간 좌표 moveLatLon으로 이동시킵니다.
                             marker.setPosition(moveLatLon); 
                         } else {
-                            // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
                             marker = new kakao.maps.Marker({ 
-                                position: moveLatLon, // [오류 해결] 여기도 moveLatLon으로 수정
+                                position: moveLatLon, 
                                 clickable: true 
                             });
                             marker.setMap(map);
 
-                            // 처음 연결 시에도 마커를 누르면 로드뷰가 뜨도록 설정
                             kakao.maps.event.addListener(marker, 'click', function() {
                                 const currentPos = marker.getPosition();
                                 rvClient.getNearestPanoId(currentPos, 100, function(panoId) {
@@ -311,13 +244,23 @@ span {
                             });
                         }
 
-                        // [초기 배터리 정보 즉시 표시 보강]
+                        // [기능 추가 3] 스마트 대시보드 (배터리, 오차, 수신시간 상세 안내)
                         if (infowindow) infowindow.setMap(null); 
+                        const accValue = Math.round(accuracy);
+                        const dateObj = new Date(locTime || Date.now());
+                        const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + 
+                                        dateObj.getMinutes().toString().padStart(2, '0') + ':' + 
+                                        dateObj.getSeconds().toString().padStart(2, '0');
+
                         infowindow = new kakao.maps.CustomOverlay({
-                            map: map,
-                            position: moveLatLon, // <--- [오류 해결] 이 부분이 lastLatLon으로 남아있어 앱이 멈췄습니다.
-                            content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                            yAnchor: 3.5 
+                             map: map,
+                             position: moveLatLon,
+                             content: `<div style="padding: 5px 10px; background: rgba(255,255,255,0.95); border: 1px solid #ccc; border-radius: 8px; font-size: 13px; font-weight: bold; color: #333; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                                         배터리: <span style="color:${batteryLevel <= 15 ? 'red' : 'green'};">${batteryLevel}%</span><br>
+                                         <span style="color: #1E88FF;">오차 반경: ${accValue}m</span><br>
+                                         <span style="color: #ff4d4d;">수신: ${timeStr}</span>
+                                       </div>`,
+                             yAnchor: 2.8 
                         });
                     }
 
@@ -334,13 +277,11 @@ span {
             }
         }
 
-        // 2. 상태 전송 로직 유지
         function setTracking(status) {
             if (!currentChildId) return alert("아이디 연결을 먼저 해주세요.");
             database.ref('children/' + currentChildId + '/status').set(status);
         }
 
-        // 3. 상태 변화를 감지하여 UI(버튼 모양, 글자)를 자동으로 바꿔주는 로직
         function listenToStatus() {
             database.ref('children/' + currentChildId + '/status').on('value', (snapshot) => {
                 const status = snapshot.val();
@@ -351,7 +292,7 @@ span {
                     document.getElementById('status-display').style.color = "#ff4d4d";
                     if (btn) {
                         btn.innerText = "해제";
-                        btn.className = "btn-disconnect"; // 회색으로 변경
+                        btn.className = "btn-disconnect"; 
                     }
                     startTimer();
                 } else {
@@ -359,7 +300,7 @@ span {
                     document.getElementById('status-display').style.color = "white";
                     if (btn) {
                         btn.innerText = "연결";
-                        btn.className = "btn-connect"; // 다시 파란색으로 변경
+                        btn.className = "btn-connect"; 
                     }
                     stopTimer();
                 }
@@ -371,24 +312,22 @@ span {
                 const data = snapshot.val();
                 
                 if (data) {
-                // [웹 팝업 문제 완벽 해결] 조급한 강제 종료 팝업을 지우고, 부드럽게 상태창만 바꿔줍니다.
                 clearTimeout(disconnectTimer);
                 disconnectTimer = setTimeout(() => {
-                    // 앱을 강제로 끄지 않고, 10분 타이머가 끝날 때까지 끈질기게 기다려줍니다.
                     const btn = document.getElementById('btn-toggle');
                     if (btn && btn.innerText === "해제") {
                         document.getElementById('status-display').innerText = "신호 약함 (실내 탐색 중...)";
-                        document.getElementById('status-display').style.color = "#ff9800"; // 주황색 표시
+                        document.getElementById('status-display').style.color = "#ff9800"; 
                     }
-                }, 30000); // 30초 동안 통신이 없으면 글자만 바뀜
+                }, 30000); 
 
                 const lat = data.lat || data.latitude;
                 const lng = data.lng || data.longitude;
-                const accuracy = data.accuracy || 30; // [추가] 앱에서 전송한 오차 반경 수신
+                const accuracy = data.accuracy || 30; 
                 const locTime = data.locTime || 0;
                 
-                // [웹 잔상 완벽 제거 3] 1분 이상 지난 낡은 위치면 화면에 그리지 않고 무시합니다.
-                if (Date.now() - locTime > 60000) {
+                // [기능 추가 2] 시간 오차 방어 (5분으로 시간 여유를 줍니다)
+                if (Date.now() - locTime > 300000) {
                     if (marker) marker.setMap(null);
                     if (accuracyCircle) accuracyCircle.setMap(null);
                     if (infowindow) infowindow.setMap(null);
@@ -396,7 +335,6 @@ span {
                     return; 
                 }
 
-                // 정상 데이터 수신 시 상태창 업데이트 (대기중 문구 원복)
                 const btn = document.getElementById('btn-toggle');
                 if (btn && btn.innerText === "해제") {
                     document.getElementById('status-display').innerText = "위치 추적 중";
@@ -406,23 +344,28 @@ span {
                 if (lat && lng) {
                     const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                     
-                    // [수정 반영] 10분 타이머(600초) 기준, 9분 30초(570초) 이상 남았을 때만 지도를 쫓아가게 합니다.
-                    if (timeLeft >= 570) {
+                    // [기능 추가 1] 동일 좌표 중복을 방지하며 경로 선 이어 그리기
+                    if (pathCoordinates.length === 0 || 
+                        pathCoordinates[pathCoordinates.length - 1].getLat() !== Number(lat) || 
+                        pathCoordinates[pathCoordinates.length - 1].getLng() !== Number(lng)) {
+                        pathCoordinates.push(moveLatLon);
+                        polyline.setPath(pathCoordinates);
+                    }
+
+                    // [기능 추가 4] 스마트 패닝 (아이 위치가 화면을 나갔을 때만 지도가 이동하게 허용)
+                    if (!map.getBounds().contain(moveLatLon)) {
                         map.panTo(moveLatLon); 
                     }
                     
-                    // 마커가 이미 있으면 위치만 이동시키고, 없으면 새로 만듭니다.
                     if (marker) {
                         marker.setPosition(moveLatLon); 
                     } else {
-                        // 1. 마커를 처음 생성할 때 클릭이 가능하도록 설정합니다.
                         marker = new kakao.maps.Marker({ 
                             position: moveLatLon, 
                             clickable: true 
                         });
                         marker.setMap(map);
 
-                        // 2. 처음 연결된 위치에서도 로드뷰가 열리도록 클릭 이벤트를 심어줍니다.
                         kakao.maps.event.addListener(marker, 'click', function() {
                             const currentPos = marker.getPosition();
                             
@@ -438,32 +381,40 @@ span {
                         });
                     }
 
-                    // [추가] 마커 주변에 실시간 오차 반경 원(Circle)을 그려줍니다.
                     if (accuracyCircle) {
                         accuracyCircle.setPosition(moveLatLon);
                         accuracyCircle.setRadius(accuracy); 
                     } else {
                         accuracyCircle = new kakao.maps.Circle({
                             center: moveLatLon,
-                            radius: accuracy,       // 스마트폰 오차 반경(m) 크기 반영
-                            strokeWeight: 1,        // 선 두께
-                            strokeColor: '#1E88FF', // 파란색 선
-                            strokeOpacity: 0.6,     // 선 투명도
-                            fillColor: '#1E88FF',   // 채우기 색상
-                            fillOpacity: 0.15       // 반투명 설정
+                            radius: accuracy,       
+                            strokeWeight: 1,        
+                            strokeColor: '#1E88FF', 
+                            strokeOpacity: 0.6,     
+                            fillColor: '#1E88FF',   
+                            fillOpacity: 0.15       
                         });
                         accuracyCircle.setMap(map);
                     }
 
-                    // 배터리 정보 표시
+                    // [기능 추가 3] 스마트 대시보드 업데이트 (배터리, 오차, 수신시간 정보)
                     if (infowindow) infowindow.setMap(null); 
                     const batteryLevel = data.battery !== undefined ? data.battery : '--';
-                    // content 스타일 안에 pointer-events: none; 유지
+                    const accValue = Math.round(accuracy);
+                    const dateObj = new Date(locTime || Date.now());
+                    const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + 
+                                    dateObj.getMinutes().toString().padStart(2, '0') + ':' + 
+                                    dateObj.getSeconds().toString().padStart(2, '0');
+
                     infowindow = new kakao.maps.CustomOverlay({
                          map: map,
                          position: moveLatLon,
-                         content: `<div style="pointer-events: none; font-size: 14px; font-weight: bold; color: black; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">배터리: ${batteryLevel}%</div>`,
-                         yAnchor: 3.5 
+                         content: `<div style="padding: 5px 10px; background: rgba(255,255,255,0.95); border: 1px solid #ccc; border-radius: 8px; font-size: 13px; font-weight: bold; color: #333; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                                     배터리: <span style="color:${batteryLevel <= 15 ? 'red' : 'green'};">${batteryLevel}%</span><br>
+                                     <span style="color: #1E88FF;">오차 반경: ${accValue}m</span><br>
+                                     <span style="color: #ff4d4d;">수신: ${timeStr}</span>
+                                   </div>`,
+                         yAnchor: 2.8 
                     });
                 }
             } 
@@ -496,39 +447,34 @@ span {
             document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
         }
 
-    // --- [여기서부터 추가] 내 위치 확인 기능 ---
         let myLocationMarker = null;
 
         function findMyLocation() {
-            // 브라우저가 GPS를 지원하는지 확인
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
                     const locPosition = new kakao.maps.LatLng(lat, lon);
 
-                    // 지도를 내 위치로 부드럽게 이동
                     map.panTo(locPosition);
 
-                    // 기존 마커가 있다면 위치를 옮기고, 없다면 새로 생성 (아이 마커와 구분되는 빨간색 핀)
                     if (myLocationMarker) {
                         myLocationMarker.setPosition(locPosition);
                     } else {
-                        // [색상 변경 반영] 카카오 기본 빨간색 마커 이미지 적용
                         const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png"; 
                         const imageSize = new kakao.maps.Size(31, 35); 
                         const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize); 
 
                         myLocationMarker = new kakao.maps.Marker({
                             position: locPosition,
-                            image: markerImage // 빨간색 이미지를 씌웁니다
+                            image: markerImage 
                         });
                         myLocationMarker.setMap(map);
                     }
                 }, function(error) {
                     alert("휴대폰/PC의 위치(GPS) 권한이 차단되었거나 위치를 가져올 수 없습니다.");
                 }, {
-                    enableHighAccuracy: true, // 가장 정확한 위치 요청
+                    enableHighAccuracy: true, 
                     maximumAge: 0,
                     timeout: 5000
                 });
@@ -536,18 +482,15 @@ span {
                 alert("이 브라우저에서는 위치 확인 기능을 지원하지 않습니다.");
             }
         }
-        // ---------------------------------------------
 
-        // --- [추가] 브라우저 화면 복귀 시 자동 재연결 로직 ---
         document.addEventListener("visibilitychange", function() {
             if (document.visibilityState === 'visible') {
                 const btn = document.getElementById('btn-toggle');
                 
-                // 앱이 추적 중(상태: 해제 버튼)일 때 화면으로 돌아오면 밀린 통신을 강제로 깨웁니다.
                 if (btn && btn.innerText === "해제") {
-                    clearTimeout(disconnectTimer); // 꼬여있는 30초 종료 타이머 초기화
-                    listenToLocation(); // 실시간 위치 리스너 즉시 재가동
-                    startTimer(); // 10분 타이머 새로고침
+                    clearTimeout(disconnectTimer); 
+                    listenToLocation(); 
+                    startTimer(); 
                 }
             }
         });
