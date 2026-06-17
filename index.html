@@ -371,12 +371,16 @@ span {
                 const data = snapshot.val();
                 
                 if (data) {
-                // 1. 연결 해제(앱 종료 및 통신 끊김) 감지 타이머 (30초)
+                // [웹 팝업 문제 완벽 해결] 조급한 강제 종료 팝업을 지우고, 부드럽게 상태창만 바꿔줍니다.
                 clearTimeout(disconnectTimer);
                 disconnectTimer = setTimeout(() => {
-                    alert("현재 앱과 연결이 해제되었습니다.");
-                    setTracking('off');
-                }, 30000);
+                    // 앱을 강제로 끄지 않고, 10분 타이머가 끝날 때까지 끈질기게 기다려줍니다.
+                    const btn = document.getElementById('btn-toggle');
+                    if (btn && btn.innerText === "해제") {
+                        document.getElementById('status-display').innerText = "신호 약함 (실내 탐색 중...)";
+                        document.getElementById('status-display').style.color = "#ff9800"; // 주황색 표시
+                    }
+                }, 30000); // 30초 동안 통신이 없으면 글자만 바뀜
 
                 const lat = data.lat || data.latitude;
                 const lng = data.lng || data.longitude;
