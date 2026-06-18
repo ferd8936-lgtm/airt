@@ -156,16 +156,27 @@
 
         let isListenersAttached = false; 
 
-        // [기능 추가 1] 이동 경로(선) 그리기 객체 세팅
-        let pathCoordinates = [];
-        let polyline = new kakao.maps.Polyline({
-            path: pathCoordinates,
-            strokeWeight: 4,        
-            strokeColor: '#FF0000', 
-            strokeOpacity: 0.7,     
-            strokeStyle: 'solid'    
-        });
-        polyline.setMap(map);
+        // [스마트 추론 기능] 자주 가는 장소 등록 (원하시는 만큼 추가/수정하세요)
+        // 위도(lat), 경도(lng)는 카카오맵(PC) 등에서 해당 장소를 우클릭하여 확인할 수 있습니다.
+        const frequentPlaces = [
+            { name: "집", lat: 35.8714, lng: 128.6014 },
+            { name: "수학학원", lat: 35.8720, lng: 128.6020 },
+            { name: "학교", lat: 35.8700, lng: 128.6000 }
+        ];
+
+        // 두 좌표 간의 거리(m)를 정확히 계산하는 함수 (하버사인 공식)
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const rLat1 = lat1 * Math.PI / 180;
+            const rLat2 = lat2 * Math.PI / 180;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(rLat1) * Math.cos(rLat2) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; 
+        }
 
         window.onload = function() {
             const savedChildId = localStorage.getItem('lastChildId');
@@ -190,10 +201,6 @@
                 if (accuracyCircle) { accuracyCircle.setMap(null); }
                 if (infowindow) { infowindow.setMap(null); }
                 
-                // 선 초기화
-                pathCoordinates = []; 
-                polyline.setPath(pathCoordinates);
-                
                 document.getElementById('status-display').innerText = "최신 위치 스캔 중...";
 
                 database.ref('children/' + currentChildId).once('value', (snapshot) => {
@@ -216,9 +223,6 @@
                     if (lat && lng && isFresh) {
                         const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
                         
-                        // 처음 경로 추가
-                        pathCoordinates = [moveLatLon];
-                        polyline.setPath(pathCoordinates);
                         map.panTo(moveLatLon); 
                         
                         if (marker) {
@@ -244,21 +248,12 @@
                             });
                         }
 
-                        // [기능 추가 3] 스마트 대시보드 (배터리, 오차, 수신시간 상세 안내)
                         if (infowindow) infowindow.setMap(null); 
-                        const accValue = Math.round(accuracy);
-                        const dateObj = new Date(locTime || Date.now());
-                        const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + 
-                                        dateObj.getMinutes().toString().padStart(2, '0') + ':' + 
-                                        dateObj.getSeconds().toString().padStart(2, '0');
-
                         infowindow = new kakao.maps.CustomOverlay({
                              map: map,
                              position: moveLatLon,
-                             content: `<div style="padding: 5px 10px; background: rgba(255,255,255,0.95); border: 1px solid #ccc; border-radius: 8px; font-size: 13px; font-weight: bold; color: #333; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                                         배터리: <span style="color:${batteryLevel <= 15 ? 'red' : 'green'};">${batteryLevel}%</span><br>
-                                         <span style="color: #1E88FF;">오차 반경: ${accValue}m</span><br>
-                                         <span style="color: #ff4d4d;">수신: ${timeStr}</span>
+                             content: `<div style="padding: 3px 8px; background: rgba(0,0,0,0.7); border-radius: 12px; font-size: 12px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.3); text-align: center;">
+                                         🔋 ${batteryLevel}%
                                        </div>`,
                              yAnchor: 2.8 
                         });
@@ -337,20 +332,42 @@
 
                 const btn = document.getElementById('btn-toggle');
                 if (btn && btn.innerText === "해제") {
-                    document.getElementById('status-display').innerText = "위치 추적 중";
-                    document.getElementById('status-display').style.color = "#ff4d4d";
+                    const appStatus = data.appStatus || "";
+                    
+                    if (appStatus.includes("건물 안")) {
+                        let detectedPlace = null;
+                        
+                        // 마지막 정상 위치(건물 앞) 기준, 반경 150m 내에 등록된 장소가 있는지 검사
+                        if (lat && lng) {
+                            for (let place of frequentPlaces) {
+                                let dist = getDistance(Number(lat), Number(lng), place.lat, place.lng);
+                                if (dist <= 150) { // 150m 이내면 해당 건물로 진입했다고 유추
+                                    detectedPlace = place.name;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (detectedPlace) {
+                            // 등록된 장소가 반경 내에 있으면 초록색으로 안심 안내!
+                            document.getElementById('status-display').innerText = `실내 (📍${detectedPlace} 내부일 확률 높음)`;
+                            document.getElementById('status-display').style.color = "#00e676"; // 안심 초록색
+                        } else {
+                            // 등록된 장소가 근처에 없으면 원래 앱에서 보낸 메시지(노란색) 출력
+                            document.getElementById('status-display').innerText = appStatus;
+                            document.getElementById('status-display').style.color = "#ffeb3b";
+                        }
+                    } else if (appStatus.includes("Searching")) {
+                        document.getElementById('status-display').innerText = "최신 위치 스캔 중...";
+                        document.getElementById('status-display').style.color = "#ffeb3b";
+                    } else {
+                        document.getElementById('status-display').innerText = "위치 추적 중";
+                        document.getElementById('status-display').style.color = "#ff4d4d";
+                    }
                 }
 
                 if (lat && lng) {
                     const moveLatLon = new kakao.maps.LatLng(Number(lat), Number(lng));
-                    
-                    // [기능 추가 1] 동일 좌표 중복을 방지하며 경로 선 이어 그리기
-                    if (pathCoordinates.length === 0 || 
-                        pathCoordinates[pathCoordinates.length - 1].getLat() !== Number(lat) || 
-                        pathCoordinates[pathCoordinates.length - 1].getLng() !== Number(lng)) {
-                        pathCoordinates.push(moveLatLon);
-                        polyline.setPath(pathCoordinates);
-                    }
 
                     // [기능 추가 4] 스마트 패닝 (아이 위치가 화면을 나갔을 때만 지도가 이동하게 허용)
                     if (!map.getBounds().contain(moveLatLon)) {
@@ -397,22 +414,14 @@
                         accuracyCircle.setMap(map);
                     }
 
-                    // [기능 추가 3] 스마트 대시보드 업데이트 (배터리, 오차, 수신시간 정보)
                     if (infowindow) infowindow.setMap(null); 
                     const batteryLevel = data.battery !== undefined ? data.battery : '--';
-                    const accValue = Math.round(accuracy);
-                    const dateObj = new Date(locTime || Date.now());
-                    const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + 
-                                    dateObj.getMinutes().toString().padStart(2, '0') + ':' + 
-                                    dateObj.getSeconds().toString().padStart(2, '0');
 
                     infowindow = new kakao.maps.CustomOverlay({
                          map: map,
                          position: moveLatLon,
-                         content: `<div style="padding: 5px 10px; background: rgba(255,255,255,0.95); border: 1px solid #ccc; border-radius: 8px; font-size: 13px; font-weight: bold; color: #333; font-family: 'NexonLv2Gothic'; text-align: center; white-space: nowrap; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                                     배터리: <span style="color:${batteryLevel <= 15 ? 'red' : 'green'};">${batteryLevel}%</span><br>
-                                     <span style="color: #1E88FF;">오차 반경: ${accValue}m</span><br>
-                                     <span style="color: #ff4d4d;">수신: ${timeStr}</span>
+                         content: `<div style="padding: 3px 8px; background: rgba(0,0,0,0.7); border-radius: 12px; font-size: 12px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.3); text-align: center;">
+                                     🔋 ${batteryLevel}%
                                    </div>`,
                          yAnchor: 2.8 
                     });
